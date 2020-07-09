@@ -1,0 +1,78 @@
+*** MATCHA ***
+
+Will be built using:
+> NodeJS
+> Express
+> React
+> MongoDB
+> Socket.io
+
+Requirements:
+> Have a header, main, and footer
+> Create an auto-layout to work on both desktop and mobile devices
+> Provide proper and extensive validations for forms and be secure overall
+> Registration and signing in:
+    * Registering requires email, username, firstname, lastname and password
+    * Confirmation link after registering
+    * Sign in using username and password
+    * Forgot password feature
+    * Log out on any page
+> User Profile:
+    * Upon first sign in, the profile must be filled out. (gender,
+      sexual preferences, biography, list of interests with tags and tags
+      must be reusable, pictures of 5 max including the profile pic)
+    * There will be only two sexual preferences: heterosexual and bi-sexual
+    * Be able to modify the profile at any time
+    * User must be able to check who looked at their profile as well as who
+      liked them.
+    * User must have a public 'fame rating' to be decided by the developers
+    * GPS positioning up to the neighbourhood. In the abscence of GPS, make
+      use of cell towers for location. GPS location is modifiable in profile
+      of user
+> Browsing:
+    * List of matching suggestions available for the user
+    * If no sexual preference is chosen, user is considered bi-sexual
+    * Matching is based on location of user then extending further outwards,
+      with a maximum of cRegistering requires email, username, firstname, lastname and password
+Confirmation link after registering
+Sign in using username and password
+Forgot password feature
+Log out on any pageommon tags and with a maximum 'fame rating'
+    * List must be sortable by age, location, 'fame rating' and common tags
+    * List must be filterable by age, location, 'fame rating' and common tags
+> Search:
+    * Be able to perform advanced search with filters such as: age gap, 'fame
+      rating', location, one or more tags. etc
+    * This list should also be sortable and filterable by age, location,
+      'fame rating' and tags
+> Profile of other users:
+    * Users can view others profiles except for email addresses and passwords.
+    * The visit should appear in the users history
+    * If a user has at least one picture, be able to like another user. When
+      the other user likes back, they are 'connected' and can now chat. If
+      the other user does not have a profile picture, then they can't get
+      liked
+    * Users can check 'fame ratings' of others
+    * Be able to check if users are online, else last date and time of
+      connection is displayed
+    * Users can be reported as a 'fake account'
+    * Users can be blocked and won't appear in search results and won't
+      generate additional notifications
+    * It should be clear that users are 'connected' and/or liked when they
+      appear in search results
+> Chat:
+    * Chats happen in real time when users are 'connected'
+    * Notifications for messages should be visible on any page and be updated
+      without the page being refreshed
+> Notifications:
+    * In real time, a user must be notified of receiving a like and getting a
+      like back, when their profile has been checked, a new message being
+      received, and a 'connected user unliking them
+    * Notifications should, on any page be seen as not yet read
+
+Bonus:
+> Will only be checked if the mandatory part is excellent
+> Bonuses can include:
+    * Adding 'Omniauth' strategies for the connection
+    * Importing pictured from Facebook and/or Google
+    * Creating an interactive map of the users

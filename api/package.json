@@ -1,0 +1,39 @@
+{
+  "name": "matcha",
+  "version": "1.0.0",
+  "description": "Dating WebApp",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rdu-toi/Matcha.git"
+  },
+  "author": "jgovend & rdu-toi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rdu-toi/Matcha/issues"
+  },
+  "homepage": "https://github.com/rdu-toi/Matcha#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "connect-mongodb-session": "^2.3.0",
+    "cors": "^2.8.5",
+    "crudeorm": "file:../../CRUDeORM",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "express-validator": "^6.6.0",
+    "gridfs-stream": "^1.1.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.8.9",
+    "multer": "^1.4.2",
+    "multer-gridfs-storage": "^4.0.2",
+    "mysql": "^2.18.1",
+    "nodemailer": "^6.4.2",
+    "nodemailer-sendgrid-transport": "^0.2.0"
+  }
+}
