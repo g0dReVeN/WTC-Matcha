@@ -1,5 +1,5 @@
 {
-  "name": "matcha",
+  "name": "api",
   "version": "1.0.0",
   "description": "Dating WebApp",
   "main": "app.js",
@@ -7,16 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rdu-toi/Matcha.git"
-  },
   "author": "jgovend & rdu-toi",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/rdu-toi/Matcha/issues"
-  },
-  "homepage": "https://github.com/rdu-toi/Matcha#readme",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
