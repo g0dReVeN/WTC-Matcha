@@ -4,13 +4,16 @@ const { jwt_private_key, jwt_public_key } = require('../config/config');
 
 exports.signToken = (user) => {
   return new Promise((resolve, reject) => {
+    let tagList = user.tags;
+    if (!Array.isArray(tagList))
+      tagList = tags.substring(1, tagList.length - 1).replace(/"/g, '').split(",");
     const userData = {
       id: user.id,
       username: user.username,
       firstname: user.firstname,
       lastname: user.lastname,
       email: user.email,
-      tags: user.tags,
+      tags: tagList,
       age: user.age,
       location: user.location,
       fame_rating: user.fame_rating,
@@ -18,13 +21,12 @@ exports.signToken = (user) => {
       sexual_preference: user.sexual_preference,
       biography: user.biography,
       completed_profile: user.completed_profile,
-      blocked_by_users: user.blocked_by_users,
+      blocked_users: user.blocked_users,
+      num_of_images: user.num_of_images,
       reset_token: user.reset_token,
       reset_token_expiration: user.reset_token_expiration,
       active_status: user.active_status,
     };
-    // const userData = user.toObject();
-    // delete userData.password;
     jwt.sign(userData, jwt_private_key, {
       algorithm: 'ES256',
       expiresIn: 60 * 60,
@@ -62,21 +64,6 @@ exports.verifyToken = (token) => {
       if (err) {
         return resolve({ success: false, msg: "Internal server error" });
       }
-      // const id = decodedData._id;
-      // User.findOne({ username: decodedData.username })
-      // .then(user => {
-      //   console.log("HERERERERERE!");
-      //   if (!user) {
-      //     resolve({ success: false, msg: "User does not exist." });
-      //     return reject(null);
-      //   }
-      //   resolve({ success: true, msg: "Token valid!", user: user });
-      //   return reject(null);
-      // })
-      // .catch(err => {
-      //   reject(err);
-      //   return resolve(null);
-      // })
       resolve(asyncFindUser(decodedData));
     });
   });

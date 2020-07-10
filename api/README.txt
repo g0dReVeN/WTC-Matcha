@@ -6,11 +6,11 @@ Registering a new user (An email will be sent to the given email for verificatio
 URL			-	http://localhost:5000/register
 METHOD		-	POST
 BODY		-	{
-					username: String,
+					username: String, (min: 4, max: 15)
 					firstname: String,
 					lastname: String,
 					email: String,
-					password: String
+					password: String (min: 6, max: 12)
 				}
 RESPONSE	-	SUCCESSFUL
 				http code 201
@@ -19,10 +19,24 @@ RESPONSE	-	SUCCESSFUL
 					msg: "User created"
 				}
 			-	UNSUCCESSFUL
-				http code 400
+				http code 409
 				{
 					success: false,
 					msg: "'Username already exists'"
+				}
+				http code 409
+				{
+					success: false,
+					msg: "'User with this email already exists'"
+				}
+				http code 422
+				{
+					success: false,
+					msg: "[
+						'Username has to be between 4 and 15 characters.',
+						'Please enter a valid email.',
+						'Password has to be alphanumeric and between 6 and 12 characters.'
+						]"
 				}
 				http code 500
 				{
@@ -33,21 +47,28 @@ RESPONSE	-	SUCCESSFUL
 
 Confirmation of newly created user (A user is verified by clicking the link sent to their given email after registration):
 URL			-	http://localhost:5000/confirm
-METHOD		-	POST
+METHOD		-	PATCH
 BODY		-	{
-					token: String
+					reset_token: String,
+					username: String
 				}
 RESPONSE	-	SUCCESSFUL
 				http code 200
 				{
 					success: true,
-					msg: "User verified. Token attached"
+					msg: "User verified. Token attached",
+					{token}
 				}
 			-	UNSUCCESSFUL
 				http code 400
 				{
 					success: false,
-					msg: "Invalid token given"
+					msg: "Invalid token given or username given"
+				}
+				http code 422
+				{
+					success: false,
+					msg: "['Username has to be between 4 and 15 characters.']"
 				}
 				http code 500
 				{
@@ -72,13 +93,22 @@ RESPONSE	-	SUCCESSFUL
 				http code 200
 				{
 					success: true,
-					msg: "User exists. Token attached"
+					msg: "User exists. Token attached",
+					{token}
 				}
 			-	UNSUCCESSFUL
 				http code 400
 				{
 					success: false,
 					msg: "User not found"
+				}
+				http code 422
+				{
+					success: false,
+					msg: "[
+						'Username has to be between 4 and 15 characters.',
+						'Password has to be alphanumeric and between 6 and 12 characters.'
+						]"
 				}
 				http code 403
 				{
@@ -95,10 +125,16 @@ RESPONSE	-	SUCCESSFUL
 					success: false,
 					msg: "Token could not be generated at this time"
 				}
+				http code 500
+				{
+					success: false,
+					msg: "Internal server error",
+					{errorMessage}
+				}
 
 Forgot password (Interchangeably handles both 'forgot password' and logged in users who request to change their password):
 URL			-	http://localhost:5000/forgotPassword
-METHOD		-	POST
+METHOD		-	PATCH
 BODY		-	{
 					username: String,
 					forgot: Boolean (true: forgot password, false: request to change password)
@@ -116,10 +152,18 @@ RESPONSE	-	SUCCESSFUL
 					resetToken: String
 				}
 			-	UNSUCCESSFUL
-				http code 400
+				http code 404
 				{
 					success: false,
-					msg: "User does not exist"
+					msg: "Invalid username"
+				}
+				http code 422
+				{
+					success: false,
+					msg: "[
+						'Username has to be between 4 and 15 characters.',
+						'Forgot needs to be a boolean value'
+						]"
 				}
 				http code 500
 				{
@@ -130,10 +174,11 @@ RESPONSE	-	SUCCESSFUL
 
 Change password (The new password along with the resetToken received from the 'Forgot password'  is provided):
 URL			-	http://localhost:5000/forgotPassword
-METHOD		-	POST
+METHOD		-	PATCH
 BODY		-	{
 					username: String,
-					forgot: Boolean (true: forgot password, false: change password)
+					password: String,
+					reset_token: String
 				}
 RESPONSE	-	SUCCESSFUL
 				http code 200
@@ -142,10 +187,18 @@ RESPONSE	-	SUCCESSFUL
 					msg: "User successfully changed their password"
 				}
 			-	UNSUCCESSFUL
-				http code 400
+				http code 404
 				{
 					success: false,
-					msg: "Invalid username"
+					msg: "Invalid username and/or token"
+				}
+				http code 422
+				{
+					success: false,
+					msg: "[
+						'Username has to be between 4 and 15 characters.',
+						'Password has be alphanumeric and be between 6 and 12 characters.'
+						]"
 				}
 				http code 500
 				{
@@ -158,6 +211,7 @@ Validate Reset Token:
 URL			-	http://localhost:5000/validateResetToken
 METHOD		-	POST
 BODY		-	{
+					username: String,
 					resetToken: String
 				}
 RESPONSE	-	SUCCESSFUL
@@ -171,6 +225,13 @@ RESPONSE	-	SUCCESSFUL
 				{
 					success: false,
 					msg: "Reset Token invalid"
+				}
+				http code 422
+				{
+					success: false,
+					msg: "[
+						'Username has to be between 4 and 15 characters.'
+						]"
 				}
 				http code 500
 				{

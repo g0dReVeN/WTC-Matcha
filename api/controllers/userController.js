@@ -1,65 +1,172 @@
+const bcrypt = require('bcryptjs');
+const { validationResult } = require("express-validator");
 const path = require('path');
 const fs = require('fs');
+
+const crude = require('../config/db');
 
 const UserModel = require('../models/user');
 const HistoryModel = require('../models/history');
 const UserImagesModel = require('../models/images');
 
-exports.patchEditProfile = async (req, res, next) => {
-  const { age, location, gender, sexual_preference, biography, tags } = req.body;
-  let completed_profile = false;
+const jwtAuth = require('../middleware/jwtAuth');
 
+const distanceBetweenPoints = (lat1, lon1, lat2, lon2) => {  // generally used geo measurement function
+  const R = 6371e3; // metres
+  const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  const d = R * c; // in metres
+  return d;
+}
+
+const refreshToken = async (user) => {
   try {
-    // const User = await UserModel;
-    // const user = await User.findOne({ id: req.user.id });
-    if ((age || req.user.age) && (location || req.user.location) && (gender || req.user.gender) && (sexual_preference || req.user.sexual_preference) && (biography || req.user.biography) && (Array.isArray(tags) || req.user.tags.length))
-      completed_profile = true;
-    await User.update({ age, gender, location: JSON.stringify(location), sexual_preference, biography, tags: tags.toString(), completed_profile }, { id: req.user.id });
-    return res.status(200).json({ success: true, msg: 'User profile updated' });
+    const User = await UserModel;
+    const last_connection = new Date();
+    await User.update({ last_connection }, { username: user.username });
+    user.last_connection = last_connection;
+    const newToken = await jwtAuth.signToken(user);
+    if (!newToken)
+      return false;
+    return newToken;
   } catch (e) {
-    res.status(500).json({ success: false, msg: 'Internal server error', e });
+    return false;
   }
 }
 
-exports.getFilteredUsers = (req, res, next) => {
+exports.patchEditProfile = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(422).json({ success: false, msg: errors.errors[0].msg, token: refreshedToken });
+  }
+  const {
+    age = req.user.age,
+    location = req.user.location,
+    gender = req.user.gender,
+    sexual_preference = req.user.sexual_preference,
+    biography = req.user.biography,
+    tags = req.user.tags,
+    username = req.user.username,
+    firstname = req.user.firstname,
+    lastname = req.user.lastname,
+    email = req.user.email,
+    password = req.user.password
+  } = req.body;
 
-  /** Things to do:
-   * Gotta include pics into result eventually
-   * And include location into query and response
-   */
+  let completed_profile = false;
+  let tagList = tags;
+  if (!Array.isArray(tags))
+    tagList = tags.substring(1, tags.length - 1).replace(/"/g, '').split(",");
+  if (age && location && gender && sexual_preference && biography && tags.length && username && firstname && lastname && email && password)
+    completed_profile = true;
 
-  const age = {
-    low: req.body.age.low,
-    high: req.body.age.high
-  };
-  const fame_rating = {
-    low: req.body.fame_rating.low,
-    high: req.body.fame_rating.high
-  };
-  const tags = req.body.tags;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const User = await UserModel;
+    await User.update({ age, gender, location: JSON.stringify(location), sexual_preference, biography, tags: tagList, completed_profile, username, firstname, lastname, email, password: hashedPassword }, { id: req.user.id });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'User profile updated', token: refreshedToken });
+  } catch (e) {
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    res.status(500).json({ success: false, msg: 'Internal server error', e, token: refreshedToken });
+  }
+}
 
-  History.findOne({ userId: req.user._id })
-    .then(history => {
-      let historyList;
-      if (!history)
-        historyList = [];
-      else
-        historyList = history.historyList.map(userHistory => userHistory.user);
-      User.find({
-        age: { $lt: age.high, $gt: age.low },
-        fameRating: { $lt: fame_rating.high, $gt: fame_rating.low },
-        sexual_preference: req.user.sexual_preference,
-        tags: { $in: tags },
-        _id: { $not: { $in: historyList } }
-      })
-        .select(["-password", "-email"])
-        .limit(6)
-        .then(users => {
-          return res.status(200).json({ success: true, msg: 'Found users mathcing filters', users });
-        })
-        .catch(err => res.status(500).json({ success: false, msg: 'Internal server error', err }));
-    })
-    .catch(err => res.status(500).json({ success: false, msg: 'Internal server error', err }));
+exports.postFilteredUsers = async (req, res, next) => {
+  const { age, fame_rating, tags, distance } = req.body;
+
+  if (!(age && fame_rating && tags && tags.length && distance))
+    return res.status(400).json({ success: false, msg: 'Insufficient or incorrect values posted' });
+
+  try {
+    const users = await crude.conn.query(`SELECT id, location FROM users WHERE id != '${req.user.id}'`);
+    const userLat = req.user.location.lat;
+    const userLong = req.user.location.long;
+    const usersWithinRange = [];
+
+    users.rows.forEach(user => {
+      if (user.location) {
+        const distanceFound = distanceBetweenPoints(userLat, userLong, parseInt(user.location.lat), parseInt(user.location.long));
+        if (user.location && distanceFound <= distance) {
+          usersWithinRange.push(user.id);
+        }
+      }
+    });
+
+    const History = await HistoryModel;
+    const userHistory = await History.findOne({ user_id: req.user.id });
+    let userHistoryList = [];
+    if (userHistory) {
+      const userHistoryJSON = userHistory.history_list;
+      Object.keys(userHistoryJSON).forEach(key => {
+        userHistoryList.push(parseInt(key));
+      });
+    }
+
+    const usersToRemove = req.user.blocked_users;
+    let usersIncluded = [];
+    if (usersToRemove && usersToRemove.length) {
+      usersIncluded = usersWithinRange.filter(val => {
+        return !(usersToRemove.includes(val) || userHistoryList.includes(val));
+      });
+    }
+
+    if (!usersIncluded.length) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(200).json({ success: true, msg: 'Users found', users: [], token: refreshedToken });
+    }
+
+    let formattedTagsArrayString = '{';
+    tags.forEach((val, index) => {
+      formattedTagsArrayString += '"';
+      formattedTagsArrayString += val;
+      formattedTagsArrayString += '"';
+      if (index != tags.length - 1)
+        formattedTagsArrayString += ',';
+    });
+    formattedTagsArrayString += '}';
+
+    let formattedusersWithinRangeArrayString = '(';
+    usersIncluded.forEach((val, index) => {
+      formattedusersWithinRangeArrayString += val;
+      if (index != usersIncluded.length - 1)
+        formattedusersWithinRangeArrayString += ',';
+    });
+    formattedusersWithinRangeArrayString += ')';
+
+
+    const resultSet = await crude.conn.query(`
+    SELECT * FROM users WHERE
+    id IN ${formattedusersWithinRangeArrayString} AND
+    fame_rating >= ${fame_rating.min} AND fame_rating <= ${fame_rating.max} AND
+    age >= ${age.min} AND age <= ${age.max} AND
+    tags && '${formattedTagsArrayString}'
+    `);
+
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'Users found', users: resultSet.rows, token: refreshedToken });
+  } catch (e) {
+    res.status(500).json({ success: false, msg: 'Internal server error', e })
+  }
 }
 
 exports.putHistory = async (req, res, next) => {
@@ -81,162 +188,156 @@ exports.putHistory = async (req, res, next) => {
       history_list[user_id] = like;
       await History.update({ history_list: JSON.stringify(history_list) }, { user_id: id });
     }
-    return res.status(200).json({ success: true, msg: 'History added' });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'History added', token: refreshedToken });
   } catch (e) {
-    return res.status(500).json({ success: false, msg: 'Internal server error', err });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(500).json({ success: false, msg: 'Internal server error', e, token: refreshedToken });
   }
 }
 
 exports.putSingleUserImage = async (req, res, next) => {
-  if (!req.files)
-    return res.status(401).json({ success: false, msg: "Error uploading or no image uploaded" });
-  if (req.files.length != 1)
-    return res.status(401).json({ success: false, msg: "Too many images sent" });
+  if (!req.files) {
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(401).json({ success: false, msg: "Error uploading or no image uploaded", token: refreshedToken });
+  }
+  if (req.files.length != 1) {
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(401).json({ success: false, msg: "Too many images sent", token: refreshedToken });
+  }
 
   try {
     const id = req.user.id;
     const UserImages = await UserImagesModel;
     const userImages = await UserImages.findOne({ user_id: id });
 
-    const fileNameNum = req.files[0].fieldname.charAt(3);
-    const imgName = req.files[0].fieldname.substring(0, 3) === 'img';
-    if (!imgName || !fileNameNum)
-      return res.status(401).json({ success: false, msg: 'Incorrect request paramater format' });
     if (!userImages) {
-      let imageList = [null, null, null, null];
-      let profileImage = null;
-      if (fileNameNum !== '0' && !isNaN(fileNameNum))
-        imageList[parseInt(fileNameNum) - 1] = req.files[0].filename;
-      else if (fileNameNum === '0')
-        profileImage = req.files[0].filename;
+      const imageList = [];
+      imageList.push(req.files[0].filename);
       await new UserImages({
         user_id: req.user.id,
-        image_list: imageList,
-        profile_image: profileImage
+        image_list: imageList
       });
     } else {
       const image_list = userImages.image_list;
       const image_list_array = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",");
-      image_list_array.forEach((val, index, arr) => {
-        if (val === 'NULL')
-          arr[index] = null;
-      })
-      let profile_image = userImages.profile_image;
-      if (fileNameNum !== '0' && !isNaN(fileNameNum))
-        image_list_array[parseInt(fileNameNum) - 1] = req.files[0].filename;
-      else if (fileNameNum === '0') {
-        profile_image = req.files[0].filename;
-      }
-      await UserImages.update({ image_list: image_list_array, profile_image }, { user_id: id });
+      image_list_array.push(req.files[0].filename);
+      await UserImages.update({ image_list: image_list_array }, { user_id: id });
     }
-    return res.status(200).json({ success: true, msg: 'Image uploaded' });
+    const User = await UserModel;
+    await User.update({ num_of_images: req.user.num_of_images + 1 }, { username: req.user.username });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'Image uploaded', token: refreshedToken });
   } catch (e) {
-    return res.status(500).json({ success: false, msg: 'Internal server error', e })
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(500).json({ success: false, msg: 'Internal server error', e, token: refreshedToken });
   }
 }
 
 exports.putMultipleUserImages = async (req, res, next) => {
-  if (!req.files)
-    return res.status(401).json({ success: false, msg: "Error uploading or no images uploaded" });
-  if (req.files.length > 5)
-    return res.status(401).json({ success: false, msg: "Too many images sent" });
+  if (!req.files) {
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(401).json({ success: false, msg: "Error uploading or no images uploaded", token: refreshedToken });
+  }
+
   try {
     const id = req.user.id;
     const UserImages = await UserImagesModel;
     const userImages = await UserImages.findOne({ user_id: id });
 
+    let imageList = [];
     if (!userImages) {
-      let imageList = [null, null, null, null];
-      let profileImage = null;
-      req.files.forEach(file => {
-        const fileNameNum = file.fieldname.charAt(3);
-        const imgName = file.fieldname.substring(0, 3) === 'img';
-        if (!imgName || !fileNameNum)
-          return res.status(401).json({ success: false, msg: 'Incorrect request paramater format' });
-        if (fileNameNum !== '0' && !isNaN(fileNameNum))
-          imageList[parseInt(fileNameNum) - 1] = file.filename;
-        else if (fileNameNum === '0')
-          profileImage = req.files[0].filename;
+      req.files.forEach(image => {
+        imageList.push(image.filename);
       });
       await new UserImages({
         user_id: req.user.id,
-        image_list: imageList,
-        profile_image: profileImage
+        image_list: imageList
       });
     } else {
       const image_list = userImages.image_list;
-      const image_list_array = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",");
-      image_list_array.forEach((val, index, arr) => {
-        if (val === 'NULL')
-          arr[index] = null;
-      })
-      let profile_image = userImages.profile_image;
-      req.files.forEach(file => {
-        const fileNameNum = file.fieldname.charAt(3);
-        const imgName = file.fieldname.substring(0, 3) === 'img';
-        if (!imgName || !fileNameNum)
-          return res.status(401).json({ success: false, msg: 'Incorrect request paramater format' });
-        if (fileNameNum !== '0' && !isNaN(fileNameNum))
-          image_list_array[parseInt(fileNameNum) - 1] = file.filename;
-        else if (fileNameNum === '0') {
-          profile_image = req.files[0].filename;
-        }
+      imageList = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",");
+      req.files.forEach(image => {
+        imageList.push(image.filename);
       });
-      await UserImages.update({ image_list: image_list_array, profile_image }, { user_id: id });
+      await UserImages.update({ image_list: imageList }, { user_id: id });
     }
-    return res.status(200).json({ success: true, msg: 'Image(s) uploaded' });
+    const User = await UserModel;
+    await User.update({ num_of_images: imageList.length }, { username: req.user.username });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'Image(s) uploaded', token: refreshedToken });
   } catch (e) {
-    return res.status(500).json({ success: false, msg: 'Internal server error', e });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(500).json({ success: false, msg: 'Internal server error', e, token: refreshedToken });
   }
 }
 
 exports.deleteUserImage = async (req, res, next) => {
   const img = req.params.img;
-  let filePath;
-  let imgToDelete = null;
+  let imageExists = false;
 
   try {
     const UserImages = await UserImagesModel;
     const userImages = await UserImages.findOne({ user_id: req.user.id });
 
-    if (!userImages)
-      return res.status(404).json({ success: false, msg: 'This user has no images' });
-
-    const fileNameNum = img.charAt(3);
-    const imgName = img.substring(0, 3) === 'img';
-
-    if (!imgName || !fileNameNum)
-      return res.status(401).json({ success: false, msg: 'Incorrect request paramater format' });
-
-    if (fileNameNum === '0') {
-      imgToDelete = userImages.profile_image;
-      if (!imgToDelete)
-        return res.status(400).json({ success: false, msg: 'There is no image to delete' });
-      await UserImages.update({ profile_image: '' }, { user_id: req.user.id });
+    if (!userImages) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(404).json({ success: false, msg: 'This user has no images', token: refreshedToken });
     }
-    else if (fileNameNum !== '0' && !isNaN(fileNameNum)) {
-      const image_list = userImages.image_list;
-      const image_list_array = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",");
-      image_list_array.forEach((val, index, arr) => {
-        if (val === 'NULL')
-          arr[index] = null;
-      });
-      imgToDelete = image_list_array[parseInt(fileNameNum) - 1];
-      if (!imgToDelete)
-        return res.status(400).json({ success: false, msg: 'There is no image to delete' });
-      image_list_array[parseInt(fileNameNum) - 1] = null;
-      console.log(image_list_array, imgToDelete);
-      await UserImages.update({ image_list: image_list_array }, { user_id: req.user.id });
+
+    const image_list = userImages.image_list;
+    const image_list_array = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",");
+
+    const filtered_image_list_array = image_list_array.filter(image => {
+      if (image === img)
+        imageExists = true;
+      return image != img;
+    });
+
+    if (!imageExists) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(400).json({ success: false, msg: 'Image not found', token: refreshedToken });
     }
+
+    await UserImages.update({ image_list: filtered_image_list_array }, { user_id: req.user.id });
+    const User = await UserModel;
+    await User.update({ num_of_images: req.user.num_of_images - 1 }, { username: req.user.username });
+
+    const filePath = path.join(__dirname, '../imgUploads', img);
+    fs.unlinkSync(filePath);
+
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'Image successfully deleted', token: refreshedToken });
   } catch (e) {
-    return res.status(500).json({ success: false, msg: 'Internal server error', e });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(500).json({ success: false, msg: 'Internal server error', e, token: refreshedToken });
   }
-  filePath = path.join(__dirname, '../imgUploads', imgToDelete);
-  fs.unlink(filePath, err => {
-    if (err)
-      console.log(err);
-  });
-  return res.status(200).json({ success: true, msg: 'Image successfully deleted' });
 }
 
 exports.getUserImages = async (req, res, next) => {
@@ -246,30 +347,40 @@ exports.getUserImages = async (req, res, next) => {
     const User = await UserModel;
     const user = await User.findOne({ username: username });
 
-    if (!user)
-      return res.status(404).json({ success: false, msg: 'A user with this username does not exist' });
+    if (!user) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(404).json({ success: false, msg: 'A user with this username does not exist', token: refreshedToken });
+    }
 
     const UserImages = await UserImagesModel;
     const userImages = await UserImages.findOne({ user_id: user.id });
-    if (!userImages)
-      return res.status(404).json({ success: false, msg: 'This user has no images' });
-
-    const fileNameNum = img.charAt(3);
-    const imgName = img.substring(0, 3) === 'img';
-    let resImage = null;
-    if (!imgName || !fileNameNum)
-      return res.status(401).json({ success: false, msg: 'Incorrect request paramater format' })
-    if (fileNameNum === '0')
-      resImage = userImages.profile_image;
-    else if (fileNameNum !== '0' && !isNaN(fileNameNum)) {
-      const image_list = userImages.image_list;
-      resImage = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",")[parseInt(fileNameNum) - 1];
+    if (!userImages) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(404).json({ success: false, msg: 'This user has no images', token: refreshedToken });
     }
-    if (!resImage)
-      return res.status(400).json({ success: false, msg: 'Image not found' });
-    const filePath = path.join(__dirname, '../imgUploads', resImage);
+
+    const image_list = userImages.image_list;
+    const image_list_array = image_list.substring(1, image_list.length - 1).replace(/"/g, '').split(",");
+    const imageExists = image_list_array.includes(img);
+    if (!imageExists) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(400).json({ success: false, msg: 'Image not found', token: refreshedToken });
+    }
+    const filePath = path.join(__dirname, '../imgUploads', img);
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
     return res.status(200).sendFile(filePath);
   } catch (e) {
-    return res.status(500).json({ success: false, msg: 'Internal server error', e });
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(500).json({ success: false, msg: 'Internal server error', e, token: refreshedToken });
   }
 }
