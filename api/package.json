@@ -22,7 +22,7 @@
     "compression": "^1.7.4",
     "connect-mongodb-session": "^2.3.0",
     "cors": "^2.8.5",
-    "crudeorm": "file:../../CRUDeORM",
+    "crudeorm": "file:../../../CRUDeORM",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
