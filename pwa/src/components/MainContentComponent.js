@@ -24,11 +24,10 @@ export default (props) => {
 
 	const [order, setOrder] = React.useState([]);
 
-	console.log(order)
 	const handleFilterState = (key, value) => {
 		setFilters({ ...filters, [key]: value });
 	};
-	// console.log(filters);
+
     return (
 		<Column className={classes.container}>
 			<Row vertical="center" horizontal="center">
