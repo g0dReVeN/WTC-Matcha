@@ -1,19 +1,3 @@
-// const mongoose = require('mongoose');
-
-// const Schema = mongoose.Schema;
-
-// const userImagesSchema = new Schema({
-//     userId: {
-//         type: Schema.Types.ObjectId,
-//         ref: 'User',
-//         required: true
-//     },
-//     imageList: Array,
-//     profileImage: String
-// });
-
-// module.exports = mongoose.model('Images', userImagesSchema);
-
 const crude = require('../config/db');
 
 const userImagesSchema = crude.createSchema("user_images", {
@@ -28,10 +12,6 @@ const userImagesSchema = crude.createSchema("user_images", {
     image_list: {
         type: '$text',
         arrayType: '[]',
-        null: true
-    },
-    profile_image: {
-        type: '$text',
         null: true
     }
 }, {

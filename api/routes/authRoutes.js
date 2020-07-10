@@ -3,16 +3,18 @@ const { body } = require('express-validator');
 
 const authController = require('../controllers/authController');
 const isAuth = require('../middleware/is-auth');
-const UserModel = require('../models/user');
 
 router.post('/register',
   [
-    body('username', 'Username has to be between 4 and 15 characters.')
+    body('username', 'Username needs to be a string between 4 and 15 characters.')
+      .isString()
       .isLength({ min: 4, max: 15 }),
     body('email', 'Please enter a valid email.')
+      .isString()
       .normalizeEmail()
       .isEmail(),
-    body('password', 'Password has to be alphanumeric and between 6 and 12 characters.')
+    body('password', 'Password needs to be an alphanumeric string and between 6 and 12 characters.')
+      .isString()
       .trim()
       .isLength({ min: 6, max: 12 })
       .isAlphanumeric()
@@ -22,9 +24,11 @@ router.post('/dummyDataRegister', authController.postDummyRegistration);
 
 router.post('/login',
   [
-    body('username', 'Username has to be between 4 and 15 characters.')
+    body('username', 'Username needs to be a string between 4 and 15 characters.')
+      .isString()
       .isLength({ min: 4, max: 15 }),
-    body('password', 'Password has be alphanumeric and be between 6 and 12 characters.')
+    body('password', 'Password needs be an alphanumeric string and be between 6 and 12 characters.')
+      .isString()
       .trim()
       .isAlphanumeric()
       .isLength({ min: 6, max: 12 })
@@ -32,7 +36,8 @@ router.post('/login',
 
 router.patch('/forgotPassword',
   [
-    body('username', 'Username has to be between 4 and 15 characters.')
+    body('username', 'Username needs to be a string between 4 and 15 characters.')
+      .isString()
       .isLength({ min: 4, max: 15 }),
     body('forgot', 'Forgot needs to be a boolean value')
       .isBoolean()
@@ -40,9 +45,11 @@ router.patch('/forgotPassword',
 
 router.patch('/changePassword',
   [
-    body('username', 'Username has to be between 4 and 15 characters.')
+    body('username', 'Username needs to be a string between 4 and 15 characters.')
+      .isString()
       .isLength({ min: 4, max: 15 }),
-    body('password', 'Password has be alphanumeric and be between 6 and 12 characters.')
+    body('password', 'Password needs be an alphanumeric string and be between 6 and 12 characters.')
+      .isString()
       .trim()
       .isAlphanumeric()
       .isLength({ min: 6, max: 12 })
@@ -50,7 +57,8 @@ router.patch('/changePassword',
 
 router.post('/validateResetToken',
   [
-    body('username', 'Username has to be between 4 and 15 characters.')
+    body('username', 'Username needs to be a string between 4 and 15 characters.')
+      .isString()
       .isLength({ min: 4, max: 15 })
   ], authController.postValidateResetToken);
 
@@ -61,7 +69,7 @@ router.get('/', isAuth, (req, res) => { return res.status(200).json({ success: t
 
 router.patch('/confirm',
   [
-    body('username', 'Username has to be between 4 and 15 characters.')
+    body('username', 'Username needs to be a string between 4 and 15 characters.')
       .isLength({ min: 4, max: 15 })
   ], authController.patchUserConfirmation);
 

@@ -24,9 +24,9 @@ const styles = StyleSheet.create({
 const SideBarComponent = (props) => {
     return (
         <div style={{ position: 'relative' }}>
-            <Row className={css(styles.mainContainer)} breakpoints={{ 768: css(styles.mainContainerMobile, styles.mainContainerExpanded) }}>
-                <Column className={css(styles.container)} breakpoints={{ 768: css(styles.containerMobile) }}>
-                    <ProfileBarComponent { ...props.userInfo } logOut={ props.logOut } />
+            <Row className={css(styles.mainContainer)} breakpoints={{ 152: css(styles.mainContainerMobile, styles.mainContainerExpanded) }}>
+                <Column className={css(styles.container)} breakpoints={{ 15: css(styles.containerMobile) }}>
+                    <ProfileBarComponent { ...props.userInfo } openProfile={ props.openProfile }/>
                 </Column>
             </Row>
             <Row>
