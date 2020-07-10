@@ -65,9 +65,17 @@ const userSchema = crude.createSchema("users", {
         default: false,
         null: true
     },
-    blocked_by_users: {
+    blocked_users: {
         type: '$int',
         typeArray: '[]',
+        null: true
+    },
+    num_of_images: {
+        type: '$si',
+        default: 0
+    },
+    last_connection: {
+        type: '$ts',
         null: true
     },
     reset_token: {
