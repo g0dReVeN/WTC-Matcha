@@ -6,7 +6,6 @@ const path = require('path');
 module.exports = multer({
     storage: multer.diskStorage({
         destination: (req, file, callback) => {
-            console.log(file);
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir);
             }

@@ -59,7 +59,21 @@ exports.postRegistration = async (req, res, next) => {
 exports.postDummyRegistration = (req, res, next) => {
   req.body.forEach(async element => {
     try {
-      const { username, firstname, lastname, email, password } = element;
+      const {
+        username,
+        firstname,
+        lastname,
+        email,
+        password,
+        tags,
+        age,
+        latitude,
+        longitude,
+        fame_rating,
+        gender,
+        sexual_preference,
+        biography
+      } = element;
 
       const User = await UserModel;
       const user = await User.findOne({ username });
@@ -67,20 +81,29 @@ exports.postDummyRegistration = (req, res, next) => {
       if (!user) {
         const buffer = crypto.randomBytes(32);
         const statusToken = buffer.toString('hex');
-        const hashedPassword = await bcrypt.hash(password, 12);
         let targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + 5);
+        const location = {
+          lat: latitude,
+          long: longitude
+        }
         await new User({
           username,
           firstname,
           lastname,
           email,
-          password: hashedPassword,
-          tags: ['all'],
+          password,
+          tags,
+          age,
+          location,
+          fame_rating,
+          gender,
+          sexual_preference,
+          biography,
+          completed_profile: true,
           reset_token: statusToken,
           reset_token_expiration: targetDate,
-          active_status: true,
-          fame_rating: Math.floor(Math.random() * 101)
+          active_status: true
         });
       }
     } catch (e) {
