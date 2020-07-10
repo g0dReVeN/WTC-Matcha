@@ -1,6 +1,6 @@
 const crude = require('../config/db');
 
-const userImagesSchema = crude.createSchema("user_images", {
+const userLikeSchema = crude.createSchema("user_like", {
     id: {
         type: '$serial',
         primaryKey: true
@@ -9,22 +9,22 @@ const userImagesSchema = crude.createSchema("user_images", {
         type: '$int',
         unique: true
     },
-    image_list: {
-        type: '$text',
-        arrayType: '[]',
+    like_list: {
+        type: '$int',
+        typeArray: '[]',
         null: true
     }
 }, {
-    user_images_user_user_id_fkey: {
+    user_like_user_user_id_fkey: {
         foreignKey: "user_id",
         references: "users(id)",
         match: "$simple",
         update: "$na",
-        delete: "$cascade",
+        delete: "$cascade"
     }
 }
 );
 
-module.exports = userImagesSchema.then((userImages) => {
-    return crude.createModel("user_images", userImages);
+module.exports = userLikeSchema.then((userLike) => {
+    return crude.createModel("user_like", userLike);
 });

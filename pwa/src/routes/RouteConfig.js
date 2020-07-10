@@ -1,10 +1,10 @@
-import { useParams } from 'react-router-dom';
 import RootComponent from '../components/RootComponent';
 import LoginComponent from '../components/LoginComponent';
 import RegisterComponent from '../components/RegisterComponent';
 import ForgotPasswordComponent from '../components/ForgotPasswordComponent';
 import ResetPasswordComponent from '../components/ResetPasswordComponent';
 import PageNotFoundComponent from '../components/PageNotFoundComponent';
+import WaitPage from '../components/WaitPage';
 import validateResetToken from '../api/validateResetToken';
 import fetchUserProfile from '../api/fetchUserProfile';
 
@@ -29,7 +29,7 @@ const routes = [
 	},
 	{
 		path: '/confirm',
-		component: PageNotFoundComponent,
+		component: WaitPage,
 		fetchInitialData: false,
 		auth: false,
 	},

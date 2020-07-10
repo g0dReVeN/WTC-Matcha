@@ -1,26 +1,30 @@
-const mongoose = require('mongoose');
+const crude = require('../config/db');
 
-const Schema = mongoose.Schema;
-
-const notificationListSchema = new Schema({
-    userId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+const userNotificationSchema = crude.createSchema("user_notification", {
+    id: {
+        type: '$serial',
+        primaryKey: true
     },
-    message: {
-        type: String,
-        required: true
+    user_id: {
+        type: '$int',
+        unique: true
+    },
+    notification_list: {
+        type: '$json',
+        typeArray: '[]',
+        null: true
     }
-});
+}, {
+    user_notification_user_user_id_fkey: {
+        foreignKey: "user_id",
+        references: "users(id)",
+        match: "$simple",
+        update: "$na",
+        delete: "$cascade",
+    }
+}
+);
 
-const notificationSchema = new Schema({
-    userId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    notificationList: [notificationListSchema]
+module.exports = userNotificationSchema.then((userNotification) => {
+    return crude.createModel("user_notification", userNotification);
 });
-
-module.exports = mongoose.model('Notification', notificationSchema);

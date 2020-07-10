@@ -118,17 +118,18 @@ export default (props) => {
 
 		if (values.password) {
 			axios
-				.patch("http://localhost:5000" + "/resetPassword", {
+				.patch(process.env.REACT_APP_API_URL + "/resetPassword", {
 					...props.match.params,
 					password: values.password,
 				})
 				.then((res) => {
-					if (res.status === 200)
-						setValues({ color: "green", resMsg: res.msg });
-					else setValues({ color: "red", resMsg: res.msg });
+					setValues({ color: "green", resMsg: res.data.msg });
 				})
 				.catch((err) => {
-					setValues({ color: "red", resMsg: err.response.data.msg });
+					setValues({
+						color: "red",
+						resMsg: err.response ? err.response.data.msg : err.message,
+					});
 				});
 		}
 	};

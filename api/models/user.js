@@ -48,7 +48,6 @@ const userSchema = crude.createSchema("users", {
     }, // min: 0; max: 100
     gender: {
         type: '$si',
-        default: 0, // 0 = Not known; 1 = Male; 2 = Female; 9 = Not applicable; as per ISO/IEC 5218
         null: true
     },
     sexual_preference: {
@@ -70,9 +69,10 @@ const userSchema = crude.createSchema("users", {
         typeArray: '[]',
         null: true
     },
-    num_of_images: {
-        type: '$si',
-        default: 0
+    images: {
+        type: '$text',
+        typeArray: '[]',
+        null: true
     },
     last_connection: {
         type: '$ts',

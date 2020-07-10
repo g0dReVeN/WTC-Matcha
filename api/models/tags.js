@@ -1,17 +1,18 @@
-const mongoose = require('mongoose');
+const crude = require('../config/db');
 
-const Schema = mongoose.Schema;
-
-const tagsSchema = new Schema({
-    userId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+const tagsSchema = crude.createSchema("tags", {
+    id: {
+        type: '$serial',
+        primaryKey: true
     },
-    tags: {
-        type: Array,
-        required: true
+    tag_list: {
+        type: '$text',
+        typeArray: '[]',
+        null: true
     }
-});
+}
+);
 
-module.exports = mongoose.model('Tags', tagsSchema);
+module.exports = tagsSchema.then((tags) => {
+    return crude.createModel("tags", tags);
+});
