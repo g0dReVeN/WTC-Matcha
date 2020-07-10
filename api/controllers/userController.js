@@ -24,7 +24,7 @@ const distanceBetweenPoints = (lat1, lon1, lat2, lon2) => {  // generally used g
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   const d = R * c; // in metres
-  return d
+  return d;
 }
 
 const refreshToken = async (user) => {
@@ -90,7 +90,7 @@ exports.patchEditProfile = async (req, res, next) => {
 exports.postFilteredUsers = async (req, res, next) => {
   const { age, fame_rating, tags, distance } = req.body;
 
-  if (!(age && fame_rating && tags && distance))
+  if (!(age && fame_rating && tags && tags.length && distance))
     return res.status(400).json({ success: false, msg: 'Insufficient or incorrect values posted' });
 
   try {
@@ -100,8 +100,12 @@ exports.postFilteredUsers = async (req, res, next) => {
     const usersWithinRange = [];
 
     users.rows.forEach(user => {
-      if (distance && user.location && distanceBetweenPoints(userLat, userLong, user.location.lat, user.location.long) >= distance)
-        usersWithinRange.push(user.id);
+      if (user.location) {
+        const distanceFound = distanceBetweenPoints(userLat, userLong, parseInt(user.location.lat), parseInt(user.location.long));
+        if (user.location && distanceFound <= distance) {
+          usersWithinRange.push(user.id);
+        }
+      }
     });
 
     const History = await HistoryModel;
@@ -122,6 +126,13 @@ exports.postFilteredUsers = async (req, res, next) => {
       });
     }
 
+    if (!usersIncluded.length) {
+      const refreshedToken = await refreshToken(req.user);
+      if (!refreshedToken)
+        return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+      return res.status(200).json({ success: true, msg: 'Users found', users: [], token: refreshedToken });
+    }
+
     let formattedTagsArrayString = '{';
     tags.forEach((val, index) => {
       formattedTagsArrayString += '"';
@@ -139,6 +150,7 @@ exports.postFilteredUsers = async (req, res, next) => {
         formattedusersWithinRangeArrayString += ',';
     });
     formattedusersWithinRangeArrayString += ')';
+
 
     const resultSet = await crude.conn.query(`
     SELECT * FROM users WHERE
