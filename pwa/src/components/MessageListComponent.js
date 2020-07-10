@@ -35,78 +35,92 @@ const useStyles = makeStyles((theme) => ({
 export default (props) => {
 	const classes = useStyles();
 
-	const profiles = [];
+	const profiles = props.profiles;
+	const userInfo = props.userInfo;
 
 	const handleChat = (profile) => {
-		console.log(profile);
+		props.setChat(profile);
+		props.setTab("chatbox");
 	};
 
-	// const listItems = profiles.map((profile) => {
-	// 	<li key={profile.id} onClick={() => handleChat(profile)}>
+	const listItems = profiles.map((profile, index) => {
+		let lastMessage = null;
+
+		if (profile.messages && profile.messages.length) {
+			console.log(profile);
+			profile.messages[profile.messages.length - 1].username === userInfo.username
+				? lastMessage = `You - ${profile.messages[profile.messages.length - 1].message}`
+				: lastMessage = `- ${profile.messages[profile.messages.length - 1].message}`;
+		}
+		else {
+			lastMessage = `This chat has no messages`;
+		}
+		return (
+			<ListItem
+				alignItems="flex-start"
+				divider
+				key={index}
+				onClick={() => handleChat(profile)}
+			>
+				{/* <ListItemAvatar>
+					<Avatar
+						alt={`${profile.firstname} ${profile.surname}`}
+						src={profile.images[0]}
+					/>
+				</ListItemAvatar> */}
+				<ListItemText
+					primary={profile.username}
+					secondary={lastMessage}
+				/>
+			</ListItem>
+		)
+	});
+
+	return <List className={classes.root}>{listItems}</List>;
+
+	// return (
+	// 	<List className={classes.root}>
 	// 		<ListItem alignItems="flex-start">
 	// 			<ListItemAvatar>
-	// 				<Avatar
-	// 					alt={`${profile.firstname} ${profile.surname}`}
-	// 					src={profile.images[0]}
-	// 				/>
+	// 				<Avatar alt="Remy Sharp" src="/static/images/avatar/1.jpg" />
 	// 			</ListItemAvatar>
 	// 			<ListItemText
-	// 				primary={`${profile.firstname} ${profile.surname}`}
-	// 				secondary={
-	// 					profile.lastSender === "me"
-	// 						? `You - ${profile.lastMessage}`
-	// 						: `- ${profile.lastMessage}`
-	// 				}
+	// 				primary="Remy Sharp"
+	// 				secondary={"I'll be in your neighborhood doing errands this…"}
 	// 			/>
 	// 		</ListItem>
 	// 		<Divider variant="inset" component="li" />
-	// 	</li>;
-	// });
-
-	// return <List className={classes.root}>{listItems}</List>;
-	return (
-		<List className={classes.root}>
-			<ListItem alignItems="flex-start">
-				<ListItemAvatar>
-					<Avatar alt="Remy Sharp" src="/static/images/avatar/1.jpg" />
-				</ListItemAvatar>
-				<ListItemText
-					primary="Remy Sharp"
-					secondary={"I'll be in your neighborhood doing errands this…"}
-				/>
-			</ListItem>
-			<Divider variant="inset" component="li" />
-			<ListItem alignItems="flex-start">
-				<ListItemAvatar>
-					<Avatar alt="Travis Howard" src="/static/images/avatar/2.jpg" />
-				</ListItemAvatar>
-				<ListItemText
-					// primary="You - Wish I could come, but I'm out of town this…"
-					secondary={<Typography>"Travis Howard"</Typography>}
-				/>
-			</ListItem>
-			<Divider variant="inset" component="li" />
-			<ListItem alignItems="flex-start">
-				<ListItemAvatar>
-					<Avatar alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
-				</ListItemAvatar>
-				<ListItemText
-					primary="Oui Oui"
-					secondary={
-						<React.Fragment>
-							<Typography
-								component="span"
-								variant="body2"
-								className={classes.inline}
-								color="textPrimary"
-							>
-								Sandra Adams
-							</Typography>
-							{" — Do you have Paris recommendations? Have you ever…"}
-						</React.Fragment>
-					}
-				/>
-			</ListItem>
-		</List>
-	);
+	// 		<ListItem alignItems="flex-start">
+	// 			<ListItemAvatar>
+	// 				<Avatar alt="Travis Howard" src="/static/images/avatar/2.jpg" />
+	// 			</ListItemAvatar>
+	// 			<ListItemText
+	// 				// primary="You - Wish I could come, but I'm out of town this…"
+	// 				secondary={<Typography>"Travis Howard"</Typography>}
+	// 			/>
+	// 		</ListItem>
+	// 		<Divider variant="inset" component="li" />
+	// 		<ListItem alignItems="flex-start">
+	// 			<ListItemAvatar>
+	// 				<Avatar alt="Cindy Baker" src="/static/images/avatar/3.jpg" />
+	// 			</ListItemAvatar>
+	// 			<ListItemText
+	// 				primary="Oui Oui"
+	// 				secondary={
+	// 					<React.Fragment>
+	// 						<Typography
+	// 							component="span"
+	// 							variant="body2"
+	// 							className={classes.inline}
+	// 							color="textPrimary"
+	// 						>
+	// 							Sandra Adams
+	// 						</Typography>
+	// 						{" — Do you have Paris recommendations? Have you ever…"}
+	// 					</React.Fragment>
+	// 				}
+	// 			/>
+	// 		</ListItem>
+	// 	</List>
+	// );
 };

@@ -13,7 +13,6 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     width: 350,
     borderTop: '1px solid #ff596a',
-    boxShadow: '0px -1px 1px 3px rgba(255, 89, 106,0.3)',
   },
   input: {
     marginLeft: theme.spacing(1),
@@ -31,7 +30,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default ({ formRef }) => {
+export default (props) => {
   const classes = useStyles();
 
   return (
@@ -39,7 +38,9 @@ export default ({ formRef }) => {
       <InputBase
         className={classes.input}
         placeholder="Type a message..."
-        inputProps={{ type: 'text', ref: formRef }}
+        value={props.message}
+        inputProps={{ type: 'text' }}
+        onChange={e => { props.handleInputChange(e.target.value); }}
       />
       <Divider className={classes.divider} orientation="vertical" />
       <IconButton type="submit" className={classes.iconButton} aria-label="search">

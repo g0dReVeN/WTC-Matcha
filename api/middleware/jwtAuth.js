@@ -5,8 +5,13 @@ const { jwt_private_key, jwt_public_key } = require('../config/config');
 exports.signToken = (user) => {
   return new Promise((resolve, reject) => {
     let tagList = user.tags;
-    if (!Array.isArray(tagList))
+    if (tagList && !Array.isArray(tagList))
       tagList = tags.substring(1, tagList.length - 1).replace(/"/g, '').split(",");
+
+    let imgList = user.images;
+    if (imgList && !Array.isArray(imgList))
+      imgList = tags.substring(1, imgList.length - 1).replace(/"/g, '').split(",");
+
     const userData = {
       id: user.id,
       username: user.username,
@@ -22,9 +27,9 @@ exports.signToken = (user) => {
       biography: user.biography,
       completed_profile: user.completed_profile,
       blocked_users: user.blocked_users,
-      num_of_images: user.num_of_images,
+      images: imgList,
+      last_connection: user.last_connection,
       reset_token: user.reset_token,
-      reset_token_expiration: user.reset_token_expiration,
       active_status: user.active_status,
     };
     jwt.sign(userData, jwt_private_key, {
