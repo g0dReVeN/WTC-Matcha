@@ -37,14 +37,14 @@ export default function PageNotFoundComponent(props) {
 	const history = useHistory();
 	const params = QueryString.parse(props.location.search);
 
-	const confirm = {
-		reset_token: params.token,
-		username: params.username,
-	};
+	// const confirm = {
+	// 	reset_token: params.token,
+	// 	username: params.username,
+	// };
 
-	if (confirm.reset_token && confirm.username) {
+	if (params.reset_token && params.username) {
 		axios
-			.patch(process.env.REACT_APP_API_URL + "/confirm", confirm)
+			.patch(process.env.REACT_APP_API_URL + "/confirm", params)
 			.then((res) => {
 				if (res.status === 200) {
 					localStorage.clear();
