@@ -4,52 +4,80 @@ import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/Close";
+import AddAPhotoIcon from "@material-ui/icons/AddAPhoto";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 const useStyles = makeStyles((theme) => ({
 	root: {
 		display: "flex",
+		margin: theme.spacing(1),
 		"& > *": {
-			margin: theme.spacing(1),
 			width: theme.spacing(25),
 			height: theme.spacing(35),
 		},
 	},
 	paper: {
-		border: "1px dashed #BEBEBE",
-        borderRadius: "15px",
-		position: 'relative',
+		margin: "35px 0px 0px 0px",
+		border: "1px dashed #ff596a",
+		borderRadius: "15px",
+		position: "relative",
 		backgroundColor: "#F0F0F0",
 	},
 	img: {
 		width: "200px",
 		height: "280px",
 		borderRadius: "15px",
-    },
-    icon: {
-        position: 'absolute',
-        top: 0,
-        right: "8px",
-        color: "#000",
-    }
+	},
+	icon: {
+		position: "absolute",
+		top: 0,
+		right: "8px",
+		color: "#000",
+	},
+	addIcon: {
+		// position: "absolute",
+		// top: 0,
+		// right: "8px",
+		fontSize: "4.5rem",
+		padding: "104px 65px 104px 65px",
+		color: "#ff596a",
+	},
+	spinner: {
+		// position: "absolute",
+		// top: 0,
+		// right: "8px",
+		width: "60px",
+		height: "60px",
+		padding: "110px 70px 110px 70px",
+		color: "#ff596a",
+	},
+	closeIcon: {
+		color: "#ff596a",
+	},
 }));
+
+// const defaultBGImage =
+// "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 export default (props) => {
 	const classes = useStyles();
 
-	const { file, setFile, id} = props;
-	// const id = 'image1';
-	// const [file, setFile] = React.useState(null);
+	const { files, setFile, id } = props;
 
-	const handleChange = value => event => {
-		setFile(value, URL.createObjectURL(event.target.files[0]));
-    };
-    
-    const handleRemove = value => event => {
-		setFile(value, 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+	const handleChange = event => {
+		setFile(id, event.target.files[0]);
 	};
 
-	const handleClick = (event) => {
+	const handleRemove = () => {
+		setFile(id, null);
+	};
+
+	const handleClick = event => {
 		document.getElementById(id).click();
+	};
+
+	const getImg = image => {
+		return URL.createObjectURL(image);
 	};
 
 	return (
@@ -60,17 +88,32 @@ export default (props) => {
 					type={"file"}
 					accept={".jpg, .jpeg, .png"}
 					style={{ display: "none" }}
-					onChange={handleChange(id)}
+					onChange={handleChange}
 				/>
-				<img className={classes.img} src={file} onClick={handleClick} />
-				<IconButton
-					aria-label="close modal"
-					edge="end"
-                    className={classes.icon}
-                    onClick={handleRemove(id)}
-				>
-					<CloseIcon />
-				</IconButton>
+				{files[id] ? (
+					typeof files[id] == "string" ? (
+						<CircularProgress className={classes.spinner} />
+					) : (
+						<div>
+							<img
+								key={id}
+								className={classes.img}
+								src={getImg(files[id])}
+								onClick={handleClick}
+							/>
+							<IconButton
+								aria-label="close modal"
+								edge="end"
+								className={classes.icon}
+								onClick={handleRemove}
+							>
+								<CloseIcon className={classes.closeIcon}/>
+							</IconButton>
+						</div>
+					)
+				) : (
+					<AddAPhotoIcon className={classes.addIcon} onClick={handleClick} />
+				)}
 			</Paper>
 		</Column>
 	);
