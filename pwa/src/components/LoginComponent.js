@@ -66,7 +66,7 @@ const useStyles = makeStyles({
         color: '#FFF',
         backgroundColor: '#ff596a',
         '&:hover': {
-            backgroundColor: 'rgba(255,89,106, 0.9) ',
+            backgroundColor: 'rgba(255,89,106, 0.9)',
         },
     },
     text: {
@@ -130,6 +130,7 @@ const LoginComponent = (props) => {
                     history.push("/");
                 }
             }).catch(err => {
+                console.log(err);
                 setValues({ resMsg: err.response.data.msg });
             });
     };
@@ -142,7 +143,7 @@ const LoginComponent = (props) => {
                     <form className={classes.form} noValidate autoComplete="off">
                         <Column vertical="center" horizontal="center">
                             <Typography className={classes.msg} style={{ color: 'red' }} >{ values.resMsg }</Typography>
-                            <TextField required className={classes.field} label="Username" variant="outlined" value={values.username} onChange={handleChange('username')}/>
+                            <TextField required className={classes.field} label="Username" variant="outlined" value={values.username || ""} onChange={handleChange('username')}/>
                             <FormControl required className={classes.field} variant="outlined">
                                 <InputLabel htmlFor="outlined-adornment-password">Password</InputLabel>
                                 <OutlinedInput

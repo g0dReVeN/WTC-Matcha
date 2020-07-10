@@ -78,19 +78,24 @@ const useStyles = makeStyles({
 });
 
 export default function ProfileBarComponent(props) {
-    console.log(props)
     const classes = useStyles();
     const history = useHistory();
 
-    const logOut = (event) => { 
+    const { openProfile } = props;
+
+    const logOut = () => { 
         localStorage.removeItem('access_token');
         history.push("/login");
     };
 
+    const handleShowProfileModal = () => { 
+        openProfile();
+    };
+
     return (
         <Row className={ classes.container } horizontal="start" vertical="center">
-            <div className={ classes.proPic }></div>
-            <div className={ classes.title }>{ props.username }</div>
+            <div className={ classes.proPic } onClick={ handleShowProfileModal }></div>
+            <div className={ classes.title } onClick={ handleShowProfileModal }>{ props.username }</div>
             <div className={ classes.fameR }>{ props.fameRating }</div>
             <Link className={ classes.logoutB } to="/login">
                 <img className={ classes.logout } src="/assets/logout.svg" alt="Logout" onClick={ logOut } ></img>
