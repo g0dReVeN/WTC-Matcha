@@ -3,11 +3,29 @@ const { validationResult } = require("express-validator");
 const path = require('path');
 const fs = require('fs');
 
+const crude = require('../config/db');
+
 const UserModel = require('../models/user');
 const HistoryModel = require('../models/history');
 const UserImagesModel = require('../models/images');
 
 const jwtAuth = require('../middleware/jwtAuth');
+
+const distanceBetweenPoints = (lat1, lon1, lat2, lon2) => {  // generally used geo measurement function
+  const R = 6371e3; // metres
+  const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  const d = R * c; // in metres
+  return d
+}
 
 const refreshToken = async (user) => {
   try {
@@ -69,45 +87,74 @@ exports.patchEditProfile = async (req, res, next) => {
   }
 }
 
-exports.getFilteredUsers = (req, res, next) => {
+exports.postFilteredUsers = async (req, res, next) => {
+  const { age, fame_rating, tags, distance } = req.body;
 
-  /** Things to do:
-   * Gotta include pics into result eventually
-   * And include location into query and response
-   */
+  if (!(age && fame_rating && tags && distance))
+    return res.status(400).json({ success: false, msg: 'Insufficient or incorrect values posted' });
 
-  const age = {
-    low: req.body.age.low,
-    high: req.body.age.high
-  };
-  const fame_rating = {
-    low: req.body.fame_rating.low,
-    high: req.body.fame_rating.high
-  };
-  const tags = req.body.tags;
+  try {
+    const users = await crude.conn.query(`SELECT id, location FROM users WHERE id != '${req.user.id}'`);
+    const userLat = req.user.location.lat;
+    const userLong = req.user.location.long;
+    const usersWithinRange = [];
 
-  History.findOne({ userId: req.user._id })
-    .then(history => {
-      let historyList;
-      if (!history)
-        historyList = [];
-      else
-        historyList = history.historyList.map(userHistory => userHistory.user);
-      User.find({
-        age: { $lt: age.high, $gt: age.low },
-        fameRating: { $lt: fame_rating.high, $gt: fame_rating.low },
-        sexual_preference: req.user.sexual_preference,
-        tags: { $in: tags },
-        _id: { $not: { $in: historyList } }
-      })
-        .select(["-password", "-email"])
-        .limit(6)
-        .then(users => {
-          return res.status(200).json({ success: true, msg: 'Found users mathcing filters', users });
-        })
-        .catch(err => res.status(500).json({ success: false, msg: 'Internal server error', err }));
-    })
-    .catch(err => res.status(500).json({ success: false, msg: 'Internal server error', err }));
+    users.rows.forEach(user => {
+      if (distance && user.location && distanceBetweenPoints(userLat, userLong, user.location.lat, user.location.long) >= distance)
+        usersWithinRange.push(user.id);
+    });
+
+    const History = await HistoryModel;
+    const userHistory = await History.findOne({ user_id: req.user.id });
+    let userHistoryList = [];
+    if (userHistory) {
+      const userHistoryJSON = userHistory.history_list;
+      Object.keys(userHistoryJSON).forEach(key => {
+        userHistoryList.push(parseInt(key));
+      });
+    }
+
+    const usersToRemove = req.user.blocked_users;
+    let usersIncluded = [];
+    if (usersToRemove && usersToRemove.length) {
+      usersIncluded = usersWithinRange.filter(val => {
+        return !(usersToRemove.includes(val) || userHistoryList.includes(val));
+      });
+    }
+
+    let formattedTagsArrayString = '{';
+    tags.forEach((val, index) => {
+      formattedTagsArrayString += '"';
+      formattedTagsArrayString += val;
+      formattedTagsArrayString += '"';
+      if (index != tags.length - 1)
+        formattedTagsArrayString += ',';
+    });
+    formattedTagsArrayString += '}';
+
+    let formattedusersWithinRangeArrayString = '(';
+    usersIncluded.forEach((val, index) => {
+      formattedusersWithinRangeArrayString += val;
+      if (index != usersIncluded.length - 1)
+        formattedusersWithinRangeArrayString += ',';
+    });
+    formattedusersWithinRangeArrayString += ')';
+
+    const resultSet = await crude.conn.query(`
+    SELECT * FROM users WHERE
+    id IN ${formattedusersWithinRangeArrayString} AND
+    fame_rating >= ${fame_rating.min} AND fame_rating <= ${fame_rating.max} AND
+    age >= ${age.min} AND age <= ${age.max} AND
+    tags && '${formattedTagsArrayString}'
+    `);
+
+    const refreshedToken = await refreshToken(req.user);
+    if (!refreshedToken)
+      return res.status(500).json({ success: false, msg: 'Token could not be generated at this time' });
+    return res.status(200).json({ success: true, msg: 'Users found', users: resultSet.rows, token: refreshedToken });
+  } catch (e) {
+    res.status(500).json({ success: false, msg: 'Internal server error', e })
+  }
 }
 
 exports.putHistory = async (req, res, next) => {

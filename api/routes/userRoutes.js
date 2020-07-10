@@ -63,7 +63,7 @@ router.put('/addHistory',
 ], isAuth, userController.putHistory);
 
 /** Update DB componenets and async */
-router.get('/retrieveFilteredUsers', isAuth, userController.getFilteredUsers);
+router.post('/retrieveFilteredUsers', isAuth, userController.postFilteredUsers);
 
 router.put('/addSingleUserImage', isAuth, imgUpload.any(), userController.putSingleUserImage);
 
