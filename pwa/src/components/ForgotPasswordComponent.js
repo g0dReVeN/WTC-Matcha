@@ -110,13 +110,10 @@ const ForgotPasswordComponent = (props) => {
 					forgot: true,
 				})
 				.then((res) => {
-                    console.log(res);
-					// if (res.status === 200)
-                        setValues({ color: "green", resMsg: res.data.msg });
-					// else setValues({ color: "red", resMsg: res.msg });
+                    setValues({ color: "green", resMsg: res.data.msg });
 				})
 				.catch((err) => {
-					setValues({ color: "red", resMsg: err.response.data.msg });
+					setValues({ color: "red", resMsg: err.response ? err.response.data.msg : err.message });
 				});
 		}
 	};

@@ -1,4 +1,3 @@
-import { useParams } from 'react-router-dom';
 import RootComponent from '../components/RootComponent';
 import LoginComponent from '../components/LoginComponent';
 import RegisterComponent from '../components/RegisterComponent';
