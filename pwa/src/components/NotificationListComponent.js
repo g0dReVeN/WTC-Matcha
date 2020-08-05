@@ -21,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-export default ({ profiles }) => {
+export default ({ profiles, setNotificationBell }) => {
 	const classes = useStyles();
 
 	const handleView = (profile) => {
@@ -35,18 +35,22 @@ export default ({ profiles }) => {
 			? " - has unliked your profile"
 			: profile.action === "consult"
 			? " - has consulted your profile"
-			: profile.action === "likes"
-			? " - likes your profile as well"
+			: profile.action === "connect"
+			? " - likes your profile as well and the two of you are now connected"
+			: profile.action === "disconnect"
+			? " - has disconnected with you"
 			: "";
 	};
 
+	setNotificationBell(false);
+
 	console.log(profiles);
-	const listItems = profiles.reduce((acc, profile) => {
+	const listItems = profiles.reduce((acc, profile, index) => {
 		if (!!profile) {
 			return [
 				...acc,
 				<ListItem
-					key={profile.user_id}
+					key={index}
 					onClick={() => handleView(profile)}
 					alignItems="flex-start"
 					divider

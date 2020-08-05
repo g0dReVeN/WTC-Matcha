@@ -1,121 +1,46 @@
 import React from "react";
-import ReactDOM from "react-dom";
 import "../App.css";
 
 import Message from "./ChatMessageComponent";
 import ChatInputComponent from "./ChatInputComponent";
+import { SocketContext } from "../contexts/socket";
 
-export default class extends React.Component {
-	constructor(props) {
-		super(props);
+export default (props) => {
+	const socket = React.useContext(SocketContext);
+	const [message, setMessage] = React.useState('');
+	const scrollRef = React.useRef(null);
 
-		this.state = {
-			chats: [
-				{
-					username: "Kevin Hsu",
-					content: <p>Hello World!</p>,
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-				{
-					username: "Alice Chen",
-					content: <p>Love it! :heart:</p>,
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-				{
-					username: "Kevin Hsu",
-					content: <p>Check out my Github at https://github.com/WigoHunter</p>,
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-				{
-					username: "KevHs",
-					content: (
-						<p>
-							Lorem ipsum dolor sit amet, nibh ipsum. Cum class sem inceptos
-							incidunt sed sed. Tempus wisi enim id, arcu sed lectus aliquam,
-							nulla vitae est bibendum molestie elit risus.
-						</p>
-					),
-					img: "http://i.imgur.com/ARbQZix.jpg",
-				},
-				{
-					username: "Kevin Hsu",
-					content: <p>So</p>,
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-				{
-					username: "Kevin Hsu",
-					content: (
-						<p>
-							Chilltime is going to be an app for you to view videos with
-							friends
-						</p>
-					),
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-				{
-					username: "Kevin Hsu",
-					content: <p>You can sign-up now to try out our private beta!</p>,
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-				{
-					username: "Alice Chen",
-					content: <p>Definitely! Sounds great!</p>,
-					img: "http://i.imgur.com/Tj5DGiO.jpg",
-				},
-			],
-		};
+	React.useEffect(() => {
+		props.setMessageBell(false);
+		scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+	});
 
-		this.submitMessage = this.submitMessage.bind(this);
+	const handleInputChange = (input) => {
+		setMessage(input);
 	}
 
-	componentDidMount() {
-		this.scrollToBot();
-	}
-
-	componentDidUpdate() {
-		this.scrollToBot();
-	}
-
-	scrollToBot() {
-		ReactDOM.findDOMNode(this.refs.chats).scrollTop = ReactDOM.findDOMNode(
-			this.refs.chats
-		).scrollHeight;
-	}
-
-	submitMessage(e) {
+	const submitMessage = e => {
 		e.preventDefault();
-
-		this.setState(
-			{
-				chats: this.state.chats.concat([
-					{
-						username: "Kevin Hsu",
-						content: <p>{ReactDOM.findDOMNode(this.refs.msg).value}</p>,
-						img: "http://i.imgur.com/Tj5DGiO.jpg",
-					},
-				]),
-			},
-			() => {
-				ReactDOM.findDOMNode(this.refs.msg).value = "";
-			}
-		);
+		const messageEntry = { username: props.userInfo.username, message, dateTime: new Date().toString() };
+		socket.emit('sendMessage', { messageEntry, room: props.chat.room }, cb => {
+			if (cb)
+				props.submitMessage(messageEntry);
+			else
+				props.submitMessage('Error sending message');
+			setMessage('');
+		});
 	}
 
-	render() {
-		const username = "Kevin Hsu";
-		const { chats } = this.state;
-
-		return (
-			<div className="chatroom">
-				<ul className="chats" ref="chats">
-					{chats.map((chat) => (
-						<Message chat={chat} user={username} />
-					))}
-				</ul>
-				<form onSubmit={(e) => this.submitMessage(e)}>
-					<ChatInputComponent formRef={(ref) => (this.refs.msg = ref)} />
-				</form>
-			</div>
-		);
-	}
+	return (
+		<div className="chatroom">
+			<ul className="chats" ref={scrollRef}>
+				{props.chat.messages.map((message, index) => (
+					<Message chat={message} user={props.userInfo.username} key={index} />
+				))}
+			</ul>
+			<form onSubmit={e => submitMessage(e)}>
+				<ChatInputComponent message={message} handleInputChange={handleInputChange} />
+			</form>
+		</div>
+	);
 }

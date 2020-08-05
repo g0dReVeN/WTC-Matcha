@@ -10,7 +10,9 @@ const userHistorySchema = crude.createSchema("user_history", {
         unique: true
     },
     history_list: {
-        type: '$json'
+        type: '$int',
+        typeArray: '[]',
+        null: true
     }
 }, {
     user_history_user_user_id_fkey: {
@@ -18,7 +20,7 @@ const userHistorySchema = crude.createSchema("user_history", {
         references: "users(id)",
         match: "$simple",
         update: "$na",
-        delete: "$cascade",
+        delete: "$cascade"
     }
 }
 );

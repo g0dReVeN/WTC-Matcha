@@ -12,7 +12,7 @@ module.exports = multer({
             callback(null, dir);
         },
         filename: function (req, file, callback) {
-            callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+            callback(null, file.fieldname + '-' + new Date().getTime() + path.extname(file.originalname));
         }
     }),
     fileFilter: (req, file, callback) => {

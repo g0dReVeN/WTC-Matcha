@@ -1,5 +1,3 @@
-const UserModel = require('../models/user');
-
 const jwtAuth = require('./jwtAuth');
 
 module.exports = async (req, res, next) => {

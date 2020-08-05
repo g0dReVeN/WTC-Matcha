@@ -30,11 +30,17 @@ const styles = StyleSheet.create({
 export default (props) => {
 	const socket = React.useContext(SocketContext);
 
-	const [tab, setTab] = React.useState("history");
+	const [tab, setTab] = React.useState("messages");
+
+	const [messageBell, setMessageBell] = React.useState(false);
+
+	const [notificationBell, setNotificationBell] = React.useState(false);
 
 	const [notifications, setNotifications] = React.useState([]);
 
 	const [chats, setChats] = React.useState([]);
+
+	const [chat, setChat] = React.useState('');
 
 	React.useEffect(() => {
 		axios
@@ -66,9 +72,36 @@ export default (props) => {
 
 	React.useEffect(() => {
 		socket.on("notification", (newEntry) => {
+			setNotificationBell(true);
 			setNotifications((notifications) => [...notifications, newEntry]);
 		});
 	}, []);
+
+	React.useEffect(() => {
+		socket.on("message", ({ room, messageEntry }) => {
+			let foundChat;
+			chats.forEach(chat => {
+				if (chat.room === room) {
+					foundChat = chat;
+					return;
+				}
+			});
+			if (foundChat) {
+				const index = chats.indexOf(foundChat);
+				const newChat = { ...foundChat };
+				newChat.messages.push(messageEntry);
+				if (index !== -1) {
+					if (chat.room === newChat.room)
+						setChat(newChat);
+					setChats(prevChats => {
+						prevChats[index] = newChat;
+						return prevChats;
+					});
+					setMessageBell(true);
+				}
+			}
+		});
+	}, [chats]);
 
 	React.useEffect(() => {
 		axios
@@ -104,6 +137,10 @@ export default (props) => {
 		});
 	}, []);
 
+	const submitMessage = entry => {
+		chat.messages.push(entry);
+	}
+
 	return (
 		<div style={{ position: "relative" }}>
 			<Row
@@ -127,20 +164,20 @@ export default (props) => {
 					<UserNotificationPanelComponent
 						tab={tab}
 						setTab={setTab}
-						messageBell={""}
+						messageBell={messageBell}
 						notificationBell={""}
 					/>
 					{tab === "history" ? (
 						<HistoryListComponent key={"history"} />
 					) : tab === "messages" ? (
-						<MessageListComponent key={"messages"} profiles={chats} />
+						<MessageListComponent key={"messages"} profiles={chats} userInfo={props.userInfo} setTab={setTab} setChat={setChat} />
 					) : tab === "notifications" ? (
-						<NotificationListComponent key={"notifications"} profiles={notifications} />
+						<NotificationListComponent setNotificationBell={setNotificationBell} key={"notifications"} profiles={notifications} />
 					) : tab === "chatbox" ? (
-						<ChatboxComponent key={"chatbox"} />
+						<ChatboxComponent key={"chatbox"} setMessageBell={setMessageBell} chat={chat} userInfo={props.userInfo} submitMessage={submitMessage} />
 					) : (
-						""
-					)}
+										""
+									)}
 				</Column>
 			</Row>
 		</div>
