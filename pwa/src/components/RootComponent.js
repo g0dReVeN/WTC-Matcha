@@ -1,6 +1,4 @@
 import React from "react";
-import axios from "axios";
-import io from "socket.io-client";
 import { Column, Row } from "simple-flexbox";
 import { makeStyles } from "@material-ui/core/styles";
 import SideBarComponent from "./SideBarComponent";

@@ -49,10 +49,6 @@ const CustomSlider = withStyles({
 	},
 })(Slider);
 
-function valuetext(filter) {
-	return filter;
-}
-
 const FilterBarComponent = (props) => {
 	// const classes = useStyles();
 

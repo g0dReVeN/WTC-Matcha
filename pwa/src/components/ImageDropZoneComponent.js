@@ -1,5 +1,5 @@
 import React from "react";
-import { Column, Row } from "simple-flexbox";
+import { Column } from "simple-flexbox";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import IconButton from "@material-ui/core/IconButton";
